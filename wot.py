@@ -13,12 +13,67 @@ RETRY_COUNT = 5
 
 
 def wot_reports_for_domains(domains, key, threads_count=1):
+    """
+    :domains: string with one domain or list of string with multiple domains
+    :key: WOT API key
+    :threads_count: number of threads for parallel requests
+    """
     assert isinstance(domains, collections.Iterable)
 
     if isinstance(domains, str):
         return __get_report_for_one_domain(domains, key)
     elif isinstance(domains, collections.Iterable):
         return __get_reports_for_domains_collection(domains, key, threads_count)
+
+
+def parse_attributes_for_report(wot_report_dict):
+    """
+    :wot_report_dict: flatten original report hierarchy to dictionary with keys:
+        trustworthiness_level
+        trustworthiness_confidence
+
+        malware_viruses_confidence
+        poor_experience_confidence
+        phishing_confidence
+        scam_confidence
+        potentially_illegal_confidence
+
+        misleading_claims_unethical_confidence
+        privacy_risks_confidence
+        suspicious_confidence
+        discrimination_confidence
+        spam_confidence
+        unwanted_programs_confidence
+        ads_popups_confidence
+    """
+    result = {}
+
+    if "0" in wot_report_dict:
+        result["trustworthiness_level"] = wot_report_dict["0"][0]
+        result["trustworthiness_confidence"] = wot_report_dict["0"][1]
+
+    if "categories" in wot_report_dict:
+        categroies = wot_report_dict["categories"]
+
+        __process_category(categroies, result, "101", "malware_viruses_confidence")
+        __process_category(categroies, result, "102", "poor_experience_confidence")
+        __process_category(categroies, result, "103", "phishing_confidence")
+        __process_category(categroies, result, "104", "scam_confidence")
+        __process_category(categroies, result, "105", "potentially_illegal_confidence")
+
+        __process_category(categroies, result, "201", "misleading_claims_unethical_confidence")
+        __process_category(categroies, result, "202", "privacy_risks_confidence")
+        __process_category(categroies, result, "203", "suspicious_confidence")
+        __process_category(categroies, result, "204", "discrimination_confidence")
+        __process_category(categroies, result, "205", "spam_confidence")
+        __process_category(categroies, result, "206", "unwanted_programs_confidence")
+        __process_category(categroies, result, "207", "ads_popups_confidence")
+    return result
+
+
+def __process_category(categroies, result, code, name):
+    if code in categroies:
+        result[name] = categroies[code]
 
 
 def __get_report_for_one_domain(domain, key):
